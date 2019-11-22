@@ -4,23 +4,26 @@ import BreadcrumbCustom from '../../BreadcrumbCustom';
 import { getFormItem, getRadioList } from '../../baseFormItem';
 import "./index.less";
 import moment from 'moment';
+import { statusConfig } from '../config/allocateRConfig';
+import Req from '../request';
+import pagination from '../../pagination';
 
-//调拨类型
-export const allocateType = {
-    "0": "铺新书",
-    "1": "其他",
-}
+// //调拨类型
+// export const allocateType = {
+//     "0": "铺新书",
+//     "1": "其他",
+// }
 
-//订单状态
-export const statusConfig = {
-    "0": "草稿",
-    "1": "选书",
-    "2": "待出库",
-    "3": "配送中",
-    "4": "已上柜",
-    "5": "差异待审核",
-    "6": "已完成",
-}
+// //订单状态
+// export const statusConfig = {
+//     "0": "草稿",
+//     "1": "选书",
+//     "2": "待出库",
+//     "3": "配送中",
+//     "4": "已上柜",
+//     "5": "差异待审核",
+//     "6": "已完成",
+// }
 
 const InputGroup = Input.Group;
 const { RangePicker } = DatePicker;
@@ -133,22 +136,67 @@ const AICSearch = Form.create()(
 );
 
 class AllocateInCase extends React.Component {
+    state = {
+
+    }
+
+    params = {
+        currentPage: 1,//当前页面
+        pageSize: 10,//每页大小
+        /**搜索参数 */
+        search: {
+        },
+    }
+
+    componentDidMount() {
+        this.requestList();
+    }
+
+    requestList = () => {
+        let params = {
+            start: this.params.currentPage - 1,
+            size: this.params.pageSize,
+            type: 1,
+            ...this.params.search,
+        };
+        Req.getBookcaseRecords(params).then(data => {
+            this.setState({
+                pagination: pagination(data, (current) => {//改变页码
+                    this.params.currentPage = current;
+                    this.requestList();
+                }, (size) => {//pageSize 变化的回调
+                    this.params.pageSize = size;
+                    this.requestList();
+                }),
+                dataSource: data.content.map(i => ({
+                    ...i,
+                    key: i.bookcaseId,
+                    warehouseName: i.beWarehouse.warehouseName,
+                    caseName: i.bsBookcaseinfo.caseName,
+                    user1Name: i.user1 && i.user1.userName,
+                    user2Name: i.user2 && i.user2.userName,
+                    createTime: moment(i.createTime),
+                    ordersTime: moment(i.ordersTime),
+                }))
+            })
+        })
+    }
     render() {
         const columns = [
-            { title: '订单编号', dataIndex: 'code' },
-            { title: '调拨方', dataIndex: 'alllocator' },
-            { title: '接收方', dataIndex: 'receiver' },
-            { title: '编制人', dataIndex: 'maker' },
-            { title: '编制时间', dataIndex: 'makeTime' },
-            { title: '运维人', dataIndex: 'operator' },
-            { title: '接单时间', dataIndex: 'receiveTime' },
-            { title: '订单状态', dataIndex: 'state', render: state => statusConfig[state] },
+            { title: '订单编号', dataIndex: 'orderNo' },
+            { title: '调拨方', dataIndex: 'warehouseName' },
+            { title: '接收方', dataIndex: 'caseName' },
+            { title: '编制人', dataIndex: 'user1Name' },
+            { title: '编制时间', dataIndex: 'createTime', render: (createTime) => createTime && createTime.format("YYYY-MM-DD HH:mm:ss") },
+            { title: '运维人', dataIndex: 'user2Name' },
+            { title: '接单时间', dataIndex: 'ordersTime', render: (ordersTime) => ordersTime && ordersTime.format("YYYY-MM-DD HH:mm:ss") },
+            { title: '订单状态', dataIndex: 'status', render: status => statusConfig[status] },
             {
                 title: '操作', dataIndex: 'action',
                 render: (text, record) => (
-                    action[record.state].map((i, index) => (
+                    action[record.status].map((i, index) => (
                         <span key={index}>
-                            <a onClick={() => { i.onClick(record) }}>{i.label}</a>
+                            <a onClick={() => { i.onClick(record.bookcaseId) }}>{i.label}</a>
                             <Divider type="vertical" />
                         </span>
                     ))
@@ -157,13 +205,13 @@ class AllocateInCase extends React.Component {
         ];
 
         const action = {
-            "0": [{ label: '修改', onClick: () => { this.props.history.push("/app/storehouseM/transferInData/generate") } }],
-            "1": [{ label: '修改', onClick: () => { this.props.history.push("/app/storehouseM/transferInData/select") } }],
-            "2": [{ label: '接单', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/receive") } }],
-            "3": [{ label: '上柜', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/put") } }, { label: '打印单据', onClick: (record) => { } }],
-            "4": [{ label: '审核差距', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/check") } }],
-            "5": [{ label: '审核差距', onClick: (record) => { } }],
-            "6": [{ label: '查看', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/finished") } }],
+            "1": [{ label: '修改', onClick: (id) => { this.props.history.push(`/app/storehouseM/transferInData/generate?id=${id}`) } }],
+            "2": [{ label: '修改', onClick: (id) => { this.props.history.push(`/app/storehouseM/transferInData/select?id=${id}`) } }],
+            "3": [{ label: '接单', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/receive") } }],
+            "4": [{ label: '上柜', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/put") } }, { label: '打印单据', onClick: (record) => { } }],
+            "5": [{ label: '审核差距', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/check") } }],
+            "6": [{ label: '审核差距', onClick: (record) => { } }],
+            "7": [{ label: '查看', onClick: (record) => { this.props.history.push("/app/storehouseM/transferInData/finished") } }],
         }
 
         return (
@@ -174,8 +222,8 @@ class AllocateInCase extends React.Component {
                 >
                     <AICSearch />
                     <div style={{ textAlign: "right" }}>
-                        <Button 
-                            style={{ marginRight: '50px', marginBottom: '10px' }} 
+                        <Button
+                            style={{ marginRight: '50px', marginBottom: '10px' }}
                             type="primary"
                             onClick={() => { this.props.history.push("/app/storehouseM/transferInData/generate") }}
                         >
@@ -185,12 +233,8 @@ class AllocateInCase extends React.Component {
                     <Table
                         className="allocateInCase-Table"
                         columns={columns}
-                        dataSource={[{ key: 0, state: 0 }, { key: 1, state: 1 }, { key: 2, state: 2 }, { key: 3, state: 3 }, { key: 4, state: 4 }, { key: 5, state: 5 }, { key: 6, state: 6 }]}
-                        pagination={{
-                            showTotal: (total, range) => `第 ${range[0]} 条到第 ${range[1]} 条，共 ${total} 条`,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['10', '20', '50']
-                        }}
+                        dataSource={this.state.dataSource}
+                        pagination={this.state.pagination}
                         bordered
                     />
                 </Card>

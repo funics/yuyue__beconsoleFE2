@@ -25,9 +25,15 @@ export const getRadioList = (data) => {
         return [];
     }
     let options = [];
-    data.map((item) => {
-        options.push(<Radio value={item.id} key={item.id}>{item.name}</Radio>)
-    })
+    if (Array.isArray(data)) {//[{id:"...", name: "..."}]
+        data.map((item) => {
+            options.push(<Radio value={item.id} key={item.id}>{item.name}</Radio>)
+        })
+    } else {//键值对形式
+        for (let v in data) {
+            options.push(<Radio value={v} key={v}>{data[v]}</Radio>)
+        }
+    }
     return options;
 }
 

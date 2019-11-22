@@ -378,8 +378,8 @@ export default {
      * 根据bookcaseId获取调拨单
      * @param {*} bookcaseId 
      */
-    getTransferRecordsById(bookcaseId) {
-        return fetch(`${Url}/warehouse/transferrecords/${bookcaseId}`, { credentials: 'include' })
+    getBookcaseRecordsById(bookcaseId) {
+        return fetch(`${Url}/warehouse/bookcaserecords/${bookcaseId}`, { credentials: 'include' })
             .then((res) => res.json()).then(result => {
                 if (result.code !== 1) {
                     return Promise.resolve(result);
@@ -472,4 +472,53 @@ export default {
             console.log(err)
         })
     },
+    /**
+     * 空闲格子查询
+     * @param {*} caseId 柜子id
+     */
+    getEmptyCells(caseId) {
+        return fetch(`${Url}/warehouse/bookcellinfos/${caseId}`, { credentials: 'include' })
+            .then((res) => res.json()).then(result => {
+                if (!result.code) {
+                    return Promise.resolve(result);
+                } else {
+                    message.error(result.message)
+                }
+            }).catch((err) => {
+                console.log(err);
+            })
+    },
+    /**
+     * 调拨单商品获取
+     * @param {*} bookinfoId 书籍id
+     * @param {*} warehouseId 仓库id
+     */
+    getBookById(bookinfoId, warehouseId) {
+        return fetch(`${Url}/warehouse/bookinstores/${bookinfoId}/${warehouseId}`, { credentials: 'include' })
+            .then((res) => res.json()).then(result => {
+                if (!result.code) {
+                    return Promise.resolve(result);
+                } else {
+                    message.error(result.message)
+                }
+            }).catch((err) => {
+                console.log(err);
+            })
+    },
+    /**
+     * 调拨单运维人获取
+     * @param {*} caseId 柜子id
+     */
+    getOperateUsers(caseId) {
+        return fetch(`${Url}/warehouse/users/${caseId}`, { credentials: 'include' })
+            .then((res) => res.json()).then(result => {
+                if (!result.code) {
+                    return Promise.resolve(result);
+                } else {
+                    message.error(result.message)
+                }
+            }).catch((err) => {
+                console.log(err);
+            })
+    }
 }
